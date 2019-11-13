@@ -1,36 +1,36 @@
 <?php
-// phpQueryの読み込み
-require_once("phpQuery-onefile.php");
-
-if($_POST['inputword']){
+if($_POST){
+  //検索ワードをエンコード
   $keyword = urlencode($_POST['inputword']);
-}
 
-// HTMLの取得
-$html = file_get_contents("https://itp.ne.jp/keyword/?keyword=${keyword}&sort=01&sbmap=false");
- 
-$datas = phpQuery::newDocument($html)->find(".m-article-card__body");
+  for($offset = 0;$offset < 100; $offset+=20){
 
-foreach ($datas as $data){
-
-  //会社名
-  $company = pq($data)->find("h1")->text();
-  //最寄り駅
-  $station = str_replace('【最寄駅】', '', pq($data)->find(".m-article-card__lead__caption:eq(0)")->text());
-  //電話番号
-  $tel = str_replace('【電話番号】', '', pq($data)->find(".m-article-card__lead__caption:eq(1)")->text());
-  //住所
-  $address = str_replace('【住所】', '', pq($data)->find(".m-article-card__lead__caption:eq(2)")->text());
-  //URL
-  $url = pq($data)->find("a:eq(2)")->attr('href');
-
-  $array[] = ['title' => $company,
-              'station' => $station,
-              'tel' => $tel,
-              'address' => $address,
-              'url' => $url,
-            ];
-
+    $json = file_get_contents("https://search-api.itp.ne.jp/search?size=20&from=${offset}&sortby=01&media=pc&kw=${keyword}");
+    $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
+    $arr = json_decode($json,true);
+  
+    foreach ($arr['hits']['hits'] as $datas){
+  
+      // //会社名
+      $company = $datas['_source']['ki']['name'];
+      // //電話番号
+      $tel = $datas['_source']['ki']['tel1'];
+      // //住所
+      $address = $datas['_source']['ki']['jusyo'].$datas['_source']['ki']['jyusyo_banti'];
+      // //最寄り駅
+      $station = $datas['_source']['ki']['n_station'][0]['name']."/".$datas['_source']['ki']['n_station'][1]['name'];
+      // //URL
+      $url = $datas['_source']['ki']['url_official'];
+  
+      $array[] = ['title' => $company,
+                  'tel' => $tel,
+                  'address' => $address,
+                  'station' => $station,
+                  'url' => $url,
+                ];
+  
+    }
+  }
 }
 
 
@@ -50,9 +50,28 @@ foreach ($datas as $data){
     <button>探す</button>
   </form>
 
-  <?php foreach ($array as $hoge):?>
-    <p><?= $hoge['title']?><?= $hoge['station']?><?= $hoge['tel']?><?= $hoge['address']?><?= $hoge['url']?></p>
-  <?php endforeach?>
+  <?php if($_POST): ?>
+    <table border="1">
+      <tr>
+        <th></th>
+        <th>会社名</th>
+        <th>電話番号</th>
+        <th>住所</th>
+        <th>最寄り駅</th>
+        <th>URL</th>
+      </tr>
+      <?php foreach ($array as $index => $data):?>
+        <tr>
+          <th><?= $index +1 ?></th>
+          <th><?= $data['title']?></th>
+          <th><?= $data['tel']?></th>
+          <th><?= $data['address']?></th>
+          <th><?= $data['station'] ?></th>
+          <th><a href="<?= $data['url']?>"><?= $data['url']?></a></th>
+        </tr>
+      <?php endforeach?>
+    </table>
+  <?php endif?>
 
   </body>
 </html>
