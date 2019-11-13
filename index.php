@@ -6,7 +6,7 @@ if($_POST){
   for($offset = 0;$offset < 100; $offset+=20){
 
     $json = file_get_contents("https://search-api.itp.ne.jp/search?size=20&from=${offset}&sortby=01&media=pc&kw=${keyword}");
-    $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
+    // $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
     $arr = json_decode($json,true);
   
     foreach ($arr['hits']['hits'] as $datas){
